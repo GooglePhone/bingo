@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>賓果遊戲</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+        }
+        .bingo-card {
+            display: grid;
+            grid-template-columns: repeat(5, 50px);
+            gap: 5px;
+            margin: 20px auto;
+            width: max-content;
+        }
+        .bingo-cell {
+            width: 50px;
+            height: 50px;
+            line-height: 50px;
+            text-align: center;
+            border: 1px solid #ddd;
+            background-color: #fff;
+            cursor: pointer;
+        }
+        .bingo-cell.marked {
+            background-color: #4caf50;
+            color: #fff;
+        }
+        .free {
+            background-color: #ffc107;
+            color: #fff;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>賓果遊戲</h1>
+    <div id="bingoCard" class="bingo-card"></div>
+    <div class="controls">
+        <input type="number" id="inputNumber" placeholder="輸入數字" />
+        <button id="markNumber">確認數字</button>
+    </div>
+
+    <script>
+        const bingoCard = document.getElementById("bingoCard");
+        const inputNumber = document.getElementById("inputNumber");
+        const markNumberButton = document.getElementById("markNumber");
+
+        // 生成賓果卡的數字，並保留在記憶體中
+        const bingoNumbers = (() => {
+            const numbers = [];
+            for (let i = 0; i < 5; i++) {
+                let column = Array.from({ length: 15 }, (_, j) => j + 1 + i * 15);
+                numbers.push(...column.sort(() => 0.5 - Math.random()).slice(0, 5));
+            }
+            numbers[12] = "FREE"; // 中心格為 "FREE"
+            return numbers;
+        })();
+
+        // 初始化賓果卡
+        function initializeBingoCard() {
+            bingoNumbers.forEach((number, index) => {
+                const cell = document.createElement("div");
+                cell.className = "bingo-cell";
+                if (number === "FREE") {
+                    cell.textContent = "FREE";
+                    cell.classList.add("free", "marked");
+                } else {
+                    cell.textContent = number;
+                }
+                bingoCard.appendChild(cell);
+            });
+        }
+
+        // 根據輸入的數字標記賓果卡上的格子
+        function markNumber() {
+            const input = parseInt(inputNumber.value, 10);
+            if (isNaN(input) || input < 1 || input > 75) {
+                alert("請輸入 1 到 75 的數字！");
+                return;
+            }
+
+            let found = false;
+            Array.from(bingoCard.children).forEach(cell => {
+                if (parseInt(cell.textContent, 10) === input) {
+                    cell.classList.add("marked");
+                    found = true;
+                }
+            });
+
+            inputNumber.value = "";
+        }
+
+        // 初始化頁面
+        initializeBingoCard();
+
+        // 綁定按鈕事件
+        markNumberButton.addEventListener("click", markNumber);
+    </script>
+</body>
+</html>
