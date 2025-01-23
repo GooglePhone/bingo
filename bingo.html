@@ -28,17 +28,20 @@
             border: 1px solid #ddd;
             background-color: #fff;
             cursor: pointer;
+            user-select: none;
         }
         .bingo-cell.marked {
             background-color: #4caf50;
             color: #fff;
         }
-        .free {
-            background-color: #ffc107;
-            color: #fff;
-        }
         .controls {
             margin-top: 20px;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #ff5722;
         }
     </style>
 </head>
@@ -49,50 +52,82 @@
         <input type="number" id="inputNumber" placeholder="輸入數字" />
         <button id="markNumber">確認數字</button>
     </div>
+    <div id="status"></div>
 
     <script>
         const bingoCard = document.getElementById("bingoCard");
         const inputNumber = document.getElementById("inputNumber");
         const markNumberButton = document.getElementById("markNumber");
+        const status = document.getElementById("status");
 
-        // 生成賓果卡的數字，並保留在記憶體中
+        // 生成 1~25 的賓果卡數字並打亂順序
         const bingoNumbers = (() => {
-            const numbers = [];
-            for (let i = 0; i < 5; i++) {
-                let column = Array.from({ length: 15 }, (_, j) => j + 1 + i * 15);
-                numbers.push(...column.sort(() => 0.5 - Math.random()).slice(0, 5));
-            }
-            numbers[12] = "FREE"; // 中心格為 "FREE"
-            return numbers;
+            const numbers = Array.from({ length: 25 }, (_, i) => i + 1); // 1~25
+            return numbers.sort(() => 0.5 - Math.random()); // 隨機排列
         })();
 
         // 初始化賓果卡
         function initializeBingoCard() {
-            bingoNumbers.forEach((number, index) => {
+            bingoNumbers.forEach((number) => {
                 const cell = document.createElement("div");
                 cell.className = "bingo-cell";
-                if (number === "FREE") {
-                    cell.textContent = "FREE";
-                    cell.classList.add("free", "marked");
-                } else {
-                    cell.textContent = number;
-                }
+                cell.textContent = number;
+                cell.addEventListener("click", () => {
+                    cell.classList.toggle("marked"); // 點擊切換「標記」狀態
+                    checkBingo(); // 檢查是否完成賓果
+                });
                 bingoCard.appendChild(cell);
             });
+        }
+
+        // 檢查賓果（橫、直、對角線）
+        function checkBingo() {
+            const cells = Array.from(bingoCard.children);
+            const matrix = [];
+            while (cells.length) matrix.push(cells.splice(0, 5));
+
+            // 檢查橫排
+            for (let row of matrix) {
+                if (row.every((cell) => cell.classList.contains("marked"))) {
+                    status.textContent = "賓果！你完成了連線！";
+                    return;
+                }
+            }
+
+            // 檢查直排
+            for (let col = 0; col < 5; col++) {
+                if (matrix.every((row) => row[col].classList.contains("marked"))) {
+                    status.textContent = "賓果！你完成了連線！";
+                    return;
+                }
+            }
+
+            // 檢查對角線
+            if (matrix.every((row, i) => row[i].classList.contains("marked"))) {
+                status.textContent = "賓果！你完成了連線！";
+                return;
+            }
+            if (matrix.every((row, i) => row[4 - i].classList.contains("marked"))) {
+                status.textContent = "賓果！你完成了連線！";
+                return;
+            }
+
+            // 尚未完成
+            status.textContent = "";
         }
 
         // 根據輸入的數字標記賓果卡上的格子
         function markNumber() {
             const input = parseInt(inputNumber.value, 10);
-            if (isNaN(input) || input < 1 || input > 75) {
-                alert("請輸入 1 到 75 的數字！");
+            if (isNaN(input) || input < 1 || input > 25) {
+                alert("請輸入 1 到 25 的數字！");
                 return;
             }
 
             let found = false;
-            Array.from(bingoCard.children).forEach(cell => {
+            Array.from(bingoCard.children).forEach((cell) => {
                 if (parseInt(cell.textContent, 10) === input) {
-                    cell.classList.add("marked");
+                    cell.classList.add("marked"); // 標記該數字
                     found = true;
                 }
             });
