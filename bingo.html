@@ -43,6 +43,15 @@
             font-weight: bold;
             color: #ff5722;
         }
+        #fireworksCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -53,12 +62,15 @@
         <button id="markNumber">確認數字</button>
     </div>
     <div id="status"></div>
+    <canvas id="fireworksCanvas"></canvas>
 
     <script>
         const bingoCard = document.getElementById("bingoCard");
         const inputNumber = document.getElementById("inputNumber");
         const markNumberButton = document.getElementById("markNumber");
         const status = document.getElementById("status");
+        const fireworksCanvas = document.getElementById("fireworksCanvas");
+        const ctx = fireworksCanvas.getContext("2d");
 
         // 生成 1~25 的賓果卡數字並打亂順序
         const bingoNumbers = (() => {
@@ -86,34 +98,40 @@
             const matrix = [];
             while (cells.length) matrix.push(cells.splice(0, 5));
 
+            let bingoCount = 0;
+
             // 檢查橫排
             for (let row of matrix) {
                 if (row.every((cell) => cell.classList.contains("marked"))) {
-                    status.textContent = "賓果！你完成了連線！";
-                    return;
+                    bingoCount++;
                 }
             }
 
             // 檢查直排
             for (let col = 0; col < 5; col++) {
                 if (matrix.every((row) => row[col].classList.contains("marked"))) {
-                    status.textContent = "賓果！你完成了連線！";
-                    return;
+                    bingoCount++;
                 }
             }
 
             // 檢查對角線
             if (matrix.every((row, i) => row[i].classList.contains("marked"))) {
-                status.textContent = "賓果！你完成了連線！";
-                return;
+                bingoCount++;
             }
             if (matrix.every((row, i) => row[4 - i].classList.contains("marked"))) {
-                status.textContent = "賓果！你完成了連線！";
-                return;
+                bingoCount++;
             }
 
-            // 尚未完成
-            status.textContent = "";
+            // 更新狀態顯示
+            if (bingoCount >= 3) {
+                status.textContent = `賓果！你完成了 ${bingoCount} 條線！`;
+                triggerFireworks();  // 如果完成了 3 條線或更多，觸發煙火效果
+            } else if (bingoCount > 0) {
+                status.textContent = `賓果！你完成了 ${bingoCount} 條線！`;
+            } else {
+                status.textContent = "";
+                stopFireworks();  // 如果未達 3 條線，停止煙火
+            }
         }
 
         // 根據輸入的數字標記賓果卡上的格子
@@ -131,8 +149,71 @@
                     found = true;
                 }
             });
-	    checkBingo();
+
             inputNumber.value = "";
+            checkBingo();  // 每次標記後檢查賓果
+        }
+
+        // 顯示煙火動畫
+        function triggerFireworks() {
+            fireworksCanvas.style.display = "block";
+            fireworksCanvas.width = window.innerWidth;
+            fireworksCanvas.height = window.innerHeight;
+
+            let particles = [];
+            let colors = ["#ff5733", "#33ff57", "#5733ff", "#ff33a8", "#f7ff33"];
+
+            // 隨機生成煙火粒子
+            function createParticle(x, y) {
+                let particleCount = Math.floor(Math.random() * 20 + 30); // 每次爆發更多粒子
+                for (let i = 0; i < particleCount; i++) {
+                    let particle = {
+                        x: x,
+                        y: y,
+                        size: Math.random() * 5 + 5,  // 粒子大小範圍
+                        speedX: Math.random() * 8 - 4,
+                        speedY: Math.random() * 8 - 4,
+                        color: colors[Math.floor(Math.random() * colors.length)],
+                        life: Math.random() * 30 + 40 // 粒子生命周期
+                    };
+                    particles.push(particle);
+                }
+            }
+
+            // 顯示煙火
+            function drawFireworks() {
+                ctx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+
+                particles.forEach((particle, index) => {
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                    ctx.fillStyle = particle.color;
+                    ctx.fill();
+
+                    particle.x += particle.speedX;
+                    particle.y += particle.speedY;
+
+                    particle.size *= 0.98; // 粒子逐漸縮小
+                    particle.life--;  // 減少粒子生命
+
+                    if (particle.life <= 0) {
+                        particles.splice(index, 1); // 移除過期粒子
+                    }
+                });
+
+                if (particles.length > 0) {
+                    requestAnimationFrame(drawFireworks);
+                }
+            }
+
+            // 生成煙火
+            createParticle(window.innerWidth / 2, window.innerHeight / 2);
+            drawFireworks();
+        }
+
+        // 停止煙火
+        function stopFireworks() {
+            fireworksCanvas.style.display = "none";
         }
 
         // 初始化頁面
